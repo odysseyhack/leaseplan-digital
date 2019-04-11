@@ -1,0 +1,1 @@
+const char SECRET_PINNUMBER[] = "0000";
