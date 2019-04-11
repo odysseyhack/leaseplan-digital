@@ -1,24 +1,28 @@
 
+// undefine functions that the MKR GSM defines confliciting defintions for
 #undef max
 #undef min
 
+#include "arduino_secrets.h"
+
+// general libraries
+#include <stdio.h>
+#include <string>
+
+// Arduino specific libraries
 #include <MKRGSM.h>
 #include <Wire.h>
 #include <ACROBOTIC_SSD1306.h>
 
+// Ethereum specific libraries
 extern "C" {
 #include "libs/ecdsa.h"
 #include "libs/bignum256.h"
 }
-
 #include <keccak256.h>
-// The Ethereum library (signing, parsing transactions and cryptographic hashes)
 #include <ethers.h>
-
 #include "TX.h"
 #include "RLP.h"
-#include <stdio.h>
-#include <string>
 #include "keccak256.h"
 
 using namespace std;
@@ -31,14 +35,10 @@ uint8_t *charArrayToByteArray(char *string);
 void splitArray(uint8_t src[], uint8_t dest[], uint8_t from, uint8_t to);
 void keccak256(const uint8_t *data, uint16_t length, uint8_t *result);
 void assignAttribute(int pos, string atr, TX *tx);
-const char *receiveTransaction(string transaction);
+TX *receiveTransaction(string transaction);
 uint8_t *getPublicKey(uint8_t *privatekey);
 uint8_t *getAddress(uint8_t *publickey);
 const char *signTransaction(TX tx);
-
-const char PINNUMBER[] = "0000";
-uint8_t privatekey[] = {0x00, 0x31, 0x50, 0xbe, 0x54, 0xa8, 0xc9, 0x87, 0xda, 0xd7, 0xd9,
-                        0x99, 0x33, 0x9c, 0x51, 0xf7, 0xc2, 0x7d, 0x47, 0x90, 0x58, 0x9e, 0xbe, 0x6f, 0xf9, 0x58, 0xd8, 0x07, 0x87, 0xea, 0xed, 0x52};
 
 char *byteArrayToCharArray(uint8_t *bytes, uint8_t len)
 {
@@ -112,17 +112,18 @@ void setup()
     {
         ; // wait for serial port to connect. Needed for native USB port only
     }
-    // Serial.println("kaaskroket");
+
+    // display public key
     // Serial.println(byteArrayToCharArray(getPublicKey(privatekey), 64));
+
+    // display public address
     // Serial.print("0x");
     // Serial.println(byteArrayToCharArray(getAddress(getPublicKey(privatekey)), 20));
 
-    //                nonce|gasPrice|gasLimit|to                                     |value           |data
-    // Serial.println(receiveTransaction("0x07|0xF4240|0x5208|0x115960DecB7aA60f8D53c39cc65e30c860A2E171|0x11c37937e08000|0x"));
-    // "0x07|0x01a13b8600|0x5208|0x8f9ad0411a887c3243bcded341ed63f90b3e1417|0x11c37937e08000|0x"
-    // "0x07|0xb2d05e00|0x5208|0x115960DecB7aA60f8D53c39cc65e30c860A2E171|0xf4240|0x"
-    const char *raw_tx = receiveTransaction("TX|0x04|0x04a817c800|0x0493e0|0x115960decb7aa60f8d53c39cc65e30c860a2e171|0x05f5e100|0x");
-    // Serial.println(raw_tx);
+    // Serialized transaction :TX|nonce|gasPrice|gasLimit|to|value|data
+    TX *tx = receiveTransaction("TX|0x05|0x04a817c800|0x0493e0|0x115960decb7aa60f8d53c39cc65e30c860a2e171|0x05f5e100|0x");
+    const char *raw_tx = signTransaction(*tx);
+    Serial.println(raw_tx);
 }
 
 void loop()
@@ -130,6 +131,7 @@ void loop()
     String s = Serial.readString();
     s.length();
 
+    //
     if (s.startsWith("ping"))
     {
         // Serial.print("ping");
@@ -137,12 +139,12 @@ void loop()
 
     if (s.startsWith("TX|"))
     {
-        // Serial.print(receiveTransaction(s));
+        //Serial.print(receiveTransaction(s));
     }
 
     if (s.startsWith("getAddress"))
     {
-        // Serial.print(getAddress(getPublicKey(privatekey)));
+        //Serial.print(getAddress(getPublicKey(privatekey)));
     }
 }
 
@@ -206,7 +208,7 @@ uint8_t *getAddress(uint8_t *publickey)
     return address;
 }
 
-const char *receiveTransaction(string s)
+TX *receiveTransaction(string s)
 {
     string delimiter = "|";
 
@@ -224,7 +226,7 @@ const char *receiveTransaction(string s)
     }
     assignAttribute(i, s, tx);
 
-    return signTransaction(*tx);
+    return tx;
 }
 
 void assignAttribute(int pos, string atr, TX *tx)
