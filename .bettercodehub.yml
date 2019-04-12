@@ -1,4 +1,6 @@
 component_depth: 1 
+languange:
+- cpp
 name: cpp
 production:
   exclude:
