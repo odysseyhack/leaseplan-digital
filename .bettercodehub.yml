@@ -1,0 +1,4 @@
+- name: c++
+  production:
+    exclude:
+      - .libs/*
