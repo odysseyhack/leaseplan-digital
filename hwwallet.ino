@@ -166,6 +166,36 @@ void setup()
     //Serial.println(raw_tx);
 }
 
+void handleMessage(char* message) {
+    String s = String(message);
+    resetScreen();
+    if(s.startsWith("START")) {
+        oled.putString("START");
+    }
+
+    if(s.startsWith("BALANCE")) {
+        oled.putString("BALANCE");
+    }
+
+    if(s.startsWith("TX|")) {
+        oled.putString("RECEIVE TRANZACTION");
+    }
+
+    delete message;
+}
+
+void resetScreen() {
+    oled.init();
+    oled.setTextXY(1, 0);
+}
+
+char compareCharacters(char a, char b){
+    if(a==b)
+        return 0;
+    else
+        return -1;
+}
+
 void loop()
 {
     String s = Serial.readString();
@@ -192,8 +222,7 @@ void loop()
     char c;
 
     // If there are any SMSs available()
-    if (sms.available())
-    {
+    if (sms.available()) {
         Serial.println("Message received from:");
         sms.remoteNumber(senderNumber, 20);
         Serial.println(senderNumber);
@@ -203,26 +232,26 @@ void loop()
 
         // An example of message disposal
         // Any messages starting with # should be discarded
-        if (sms.peek() == '#')
-        {
+        if (sms.peek() == '#') {
             // Serial.println("Discarded SMS");
             sms.flush();
         }
 
         // Read message bytes and print them
-        {
-            oled.init();
-            oled.setTextXY(1, 0); // Set cursor position, start of line 1
-            char* msg;
-            while ((c = sms.read()) != -1)
-            {
-                char* temp = &c;
-                strcat(msg, temp);
-            }
-            Serial.println("message:");
-            Serial.println(msg);
-            oled.putString(msg);
+        oled.init();
+        oled.setTextXY(1, 0); // Set cursor position, start of line 1
+        char smsData[127];
+        byte smsIndex = 0;
+        while (c = sms.read()) {
+            // message sanity check
+            if( (isalnum(c) == 0 && c!='|') || smsIndex > 127) break;
+
+            smsData[smsIndex++] = c;
+            smsData[smsIndex] = '\0'; // Keep string NULL terminated
         }
+        Serial.println("message:");
+        Serial.println(smsData);
+        handleMessage(smsData);
 
         // Serial.println("\nEND OF MESSAGE");
 
