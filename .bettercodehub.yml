@@ -1,7 +1,4 @@
-component_depth: 1
-languages:
-  - cpp
-  
+component_depth: 1 
 name: cpp
   production:
     exclude:
