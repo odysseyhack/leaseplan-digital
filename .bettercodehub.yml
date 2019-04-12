@@ -6,7 +6,7 @@ languages:
     exclude:
       - /libs/crypto/.*
       - /tests/.*
- test:
-   include:
-     - /tests/.*
-      
+  test:
+    include:
+      - /libs/crypto/.*
+      - /tests/.*
