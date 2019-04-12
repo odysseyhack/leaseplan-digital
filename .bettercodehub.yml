@@ -1,10 +1,10 @@
 component_depth: 1 
 name: cpp
-  production:
-    exclude:
-      - /libs/crypto/.*
-      - /tests/.*
-  test:
-    include:
-      - /tests/.*
+production:
+  exclude:
+   - /libs/crypto/.*
+   - /tests/.*
+test:
+  include:
+   - /tests/.*
       
