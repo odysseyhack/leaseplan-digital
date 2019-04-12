@@ -5,4 +5,4 @@ exclude:
   - /libs/crypto/.*
 test:
   include:
-    - /tests/.*
+    - /tests/.*\.c
