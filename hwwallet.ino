@@ -30,6 +30,13 @@ using namespace std;
 #define HASH_LENGTH 32
 #define SIGNATURE_LENGTH 64
 
+// initialize the library instances
+GSM gsmAccess;
+GSM_SMS sms;
+
+// Array to hold the number a SMS is retreived from
+char senderNumber[20];
+
 char *byteArrayToCharArray(uint8_t *bytes, uint8_t len);
 uint8_t *charArrayToByteArray(char *string);
 void splitArray(uint8_t src[], uint8_t dest[], uint8_t from, uint8_t to);
@@ -113,6 +120,38 @@ void setup()
         ; // wait for serial port to connect. Needed for native USB port only
     }
 
+    Wire.begin();
+
+    oled.init();         // Initialze SSD1306 OLED display
+    oled.clearDisplay(); // Clear screen
+    //    oled.setFont(font5x7); // Set font type (default 8x8)
+
+    oled.setTextXY(0, 0); // Set cursor position, start of line 0
+    oled.putString(" Harmony wallet ");
+    oled.setTextXY(1, 0); // Set cursor position, start of line 1
+    oled.putString("tel:+31622167828");
+
+    // connection state
+    bool connected = false;
+
+    // Start GSM connection
+    while (!connected)
+    {
+        Serial.println("connecting..");
+        if (gsmAccess.begin(SECRET_PINNUMBER) == GSM_READY)
+        {
+            connected = true;
+        }
+        else
+        {
+            Serial.println("Not connected");
+            delay(1000);
+        }
+    }
+    oled.setTextXY(2, 0);
+    Serial.println("Connected!");
+    oled.putString("   GSM ready!   ");
+
     // display public key
     // Serial.println(byteArrayToCharArray(getPublicKey(privatekey), 64));
 
@@ -121,16 +160,18 @@ void setup()
     // Serial.println(byteArrayToCharArray(getAddress(getPublicKey(privatekey)), 20));
 
     // Serialized transaction :TX|nonce|gasPrice|gasLimit|to|value|data
-    TX *tx = receiveTransaction("TX|0x08|0x04a817c800|0x0493e0|0x115960decb7aa60f8d53c39cc65e30c860a2e171|0x05f5e100|0x");
-    const char *raw_tx = signTransaction(*tx);
-    Serial.println("raw TX:");
-    Serial.println(raw_tx);
+    //TX *tx = receiveTransaction("TX|0x09|0x04a817c800|0x0493e0|0x115960decb7aa60f8d53c39cc65e30c860a2e171|0x05f5e100|0x");
+    //const char *raw_tx = signTransaction(*tx);
+    //Serial.println("raw TX:");
+    //Serial.println(raw_tx);
 }
 
 void loop()
 {
     String s = Serial.readString();
-    s.length();
+    if(s.length()) {
+        Serial.println(s.length());
+    }
 
     //
     if (s.startsWith("ping"))
@@ -147,6 +188,51 @@ void loop()
     {
         //Serial.print(getAddress(getPublicKey(privatekey)));
     }
+
+    char c;
+
+    // If there are any SMSs available()
+    if (sms.available())
+    {
+        Serial.println("Message received from:");
+        sms.remoteNumber(senderNumber, 20);
+        Serial.println(senderNumber);
+        // Get remote number
+        // sms.remoteNumber(senderNumber, 20);
+        // oled.putString(senderNumber);
+
+        // An example of message disposal
+        // Any messages starting with # should be discarded
+        if (sms.peek() == '#')
+        {
+            // Serial.println("Discarded SMS");
+            sms.flush();
+        }
+
+        // Read message bytes and print them
+        {
+            oled.init();
+            oled.setTextXY(1, 0); // Set cursor position, start of line 1
+            char* msg;
+            while ((c = sms.read()) != -1)
+            {
+                char* temp = &c;
+                strcat(msg, temp);
+            }
+            Serial.println("message:");
+            Serial.println(msg);
+            oled.putString(msg);
+        }
+
+        // Serial.println("\nEND OF MESSAGE");
+
+        // Delete message from modem memory
+        sms.flush();
+        // Serial.println("MESSAGE DELETED");
+    }
+
+    delay(1000);
+
 }
 
 const char *signTransaction(TX tx)
