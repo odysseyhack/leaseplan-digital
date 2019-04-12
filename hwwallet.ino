@@ -21,7 +21,7 @@ extern "C" {
 }
 #include <keccak256.h>
 #include <ethers.h>
-#include "libs/tx/TX.h"
+#include "libs/rlp/TX.h"
 #include "libs/rlp/RLP.h"
 #include "keccak256.h"
 
@@ -171,6 +171,7 @@ void setup()
 }
 void handleSMS()
 {
+    char c;
     if (sms.available())
     {
         Serial.println("Message received from:");
@@ -234,8 +235,6 @@ void loop()
     {
         //Serial.print(getAddress(getPublicKey(privatekey)));
     }
-
-    char c;
 
     // If there are any SMSs available()
     handleSMS();
