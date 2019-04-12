@@ -1,6 +1,6 @@
-name: c++
+name: cpp
 exclude:
-  - .libs/*
+  - ./libs/*
 component_depth: 1
 languages:
   - cpp
