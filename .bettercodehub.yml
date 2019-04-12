@@ -1,7 +1,6 @@
-- name: c++
-production:
-  exclude:
-    - .libs/*
+name: c++
+exclude:
+  - .libs/*
 component_depth: 1
 languages:
-- cpp
+  - cpp
