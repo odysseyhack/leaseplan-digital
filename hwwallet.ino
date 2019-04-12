@@ -16,13 +16,13 @@
 
 // Ethereum specific libraries
 extern "C" {
-#include "libs/ecdsa.h"
-#include "libs/bignum256.h"
+#include "libs/crypto/ecdsa.h"
+#include "libs/crypto/bignum256.h"
 }
 #include <keccak256.h>
 #include <ethers.h>
-#include "TX.h"
-#include "RLP.h"
+#include "libs/tx/TX.h"
+#include "libs/rlp/RLP.h"
 #include "keccak256.h"
 
 using namespace std;
