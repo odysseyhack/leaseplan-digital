@@ -3,3 +3,7 @@ languages:
   - cpp
 exclude:
   - /libs/crypto/.*
+  - /tests/.*
+test:
+  include:
+    - /tests/.*
