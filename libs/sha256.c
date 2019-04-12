@@ -20,22 +20,22 @@
 
 /** Constants for SHA-256. See section 4.2.2 of FIPS PUB 180-3. */
 static const uint32_t k[64] PROGMEM = {
-0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
-0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
-0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
-0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
-0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
-0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
-0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
-0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
-0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
-0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
-0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3,
-0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
-0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5,
-0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
-0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
-0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
+	0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
+	0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+	0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
+	0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+	0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
+	0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+	0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
+	0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+	0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
+	0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+	0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3,
+	0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+	0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5,
+	0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+	0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+	0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
 
 /** Rotate right.
   * \param x The integer to rotate right.
@@ -216,131 +216,3 @@ void sha256FinishDouble(HashState *hs)
 	}
 	sha256Finish(hs);
 }
-
-#ifdef TEST_SHA256
-
-/** Where hash value will be stored after sha256() returns. */
-static uint32_t h[8];
-
-/** Calculate SHA-256 hash of a message. The result is returned in #h.
-  * \param message The message to calculate the hash of. This must be a byte
-  *                array of the size specified by length.
-  * \param length The length (in bytes) of the message.
-  */
-static void sha256(uint8_t *message, uint32_t length)
-{
-	uint32_t i;
-	HashState hs;
-
-	sha256Begin(&hs);
-	for (i = 0; i < length; i++)
-	{
-		sha256WriteByte(&hs, message[i]);
-	}
-	sha256Finish(&hs);
-	memcpy(h, hs.h, 32);
-}
-
-/** Run unit tests using test vectors from a file. The file is expected to be
-  * in the same format as the NIST "SHA Test Vectors for Hashing Byte-Oriented
-  * Messages", which can be obtained from:
-  * http://csrc.nist.gov/groups/STM/cavp/index.html#03
-  * \param filename The name of the file containing the test vectors.
-  */
-static void scanTestVectors(char *filename)
-{
-	FILE *f;
-	unsigned int length;
-	unsigned int bytes_to_read;
-	unsigned int i;
-	int value;
-	int test_number;
-	uint32_t compare_h[8];
-	char buffer[16];
-	uint8_t *message;
-
-	f = fopen(filename, "r");
-	if (f == NULL)
-	{
-		printf("Could not open %s, please get it \
-(Byte-Oriented test vectors) from \
-http://csrc.nist.gov/groups/STM/cavp/index.html#03", filename);
-		exit(1);
-	}
-
-	test_number = 1;
-	for (i = 0; i < 7; i++)
-	{
-		skipLine(f);
-	}
-	while (!feof(f))
-	{
-		// Get length of message.
-		if (!fscanf(f, "Len = %u", &length))
-		{
-			printf("fscanf error when reading length\n");
-			exit(1);
-		}
-		length = length >> 3;
-		bytes_to_read = length;
-		if (bytes_to_read == 0)
-		{
-			// Special case: for empty message, the message is still listed
-			// as "Msg = 00".
-			bytes_to_read = 1;
-		}
-		skipWhiteSpace(f);
-		// Get message itself.
-		fgets(buffer, 7, f);
-		if (strcmp(buffer, "Msg = "))
-		{
-			printf("Parse error; expected \"Msg = \"\n");
-			exit(1);
-		}
-		message = malloc(bytes_to_read);
-		for (i = 0; i < bytes_to_read; i++)
-		{
-			fscanf(f, "%02x", &value);
-			message[i] = (uint8_t)value;
-		}
-		skipWhiteSpace(f);
-		sha256(message, length);
-		free(message);
-		// Get expected message digest.
-		fgets(buffer, 6, f);
-		if (strcmp(buffer, "MD = "))
-		{
-			printf("Parse error; expected \"MD = \"\n");
-			exit(1);
-		}
-		for (i = 0; i < 8; i++)
-		{
-			fscanf(f, "%08x", &value);
-			compare_h[i] = (uint32_t)value;
-		}
-		skipWhiteSpace(f);
-		if (!memcmp(h, compare_h, 32))
-		{
-			//printf("%08x%08x%08x%08x%08x%08x%08x%08x\n", h[0], h[1], h[2], h[3], h[4], h[5], h[6], h[7]);
-			reportSuccess();
-		}
-		else
-		{
-			printf("Test number %d (Len = %u) failed\n", test_number, length << 3);
-			reportFailure();
-		}
-		test_number++;
-	}
-	fclose(f);
-}
-
-int main(void)
-{
-	initTests(__FILE__);
-	scanTestVectors("SHA256ShortMsg.rsp");
-	scanTestVectors("SHA256LongMsg.rsp");
-	finishTests();
-	exit(0);
-}
-
-#endif // #ifdef TEST_SHA256

@@ -110,6 +110,17 @@ void splitArray(uint8_t src[], uint8_t dest[], uint8_t from, uint8_t to)
         i++;
     }
 }
+void initScreen()
+{
+    oled.init();         // Initialze SSD1306 OLED display
+    oled.clearDisplay(); // Clear screen
+    //    oled.setFont(font5x7); // Set font type (default 8x8)
+
+    oled.setTextXY(0, 0); // Set cursor position, start of line 0
+    oled.putString(" Harmony wallet ");
+    oled.setTextXY(1, 0); // Set cursor position, start of line 1
+    oled.putString("tel:+31622167828");
+}
 
 void setup()
 {
@@ -122,14 +133,7 @@ void setup()
 
     Wire.begin();
 
-    oled.init();         // Initialze SSD1306 OLED display
-    oled.clearDisplay(); // Clear screen
-    //    oled.setFont(font5x7); // Set font type (default 8x8)
-
-    oled.setTextXY(0, 0); // Set cursor position, start of line 0
-    oled.putString(" Harmony wallet ");
-    oled.setTextXY(1, 0); // Set cursor position, start of line 1
-    oled.putString("tel:+31622167828");
+    initScreen();
 
     // connection state
     bool connected = false;
@@ -165,11 +169,53 @@ void setup()
     //Serial.println("raw TX:");
     //Serial.println(raw_tx);
 }
+void handleSMS()
+{
+    if (sms.available())
+    {
+        Serial.println("Message received from:");
+        sms.remoteNumber(senderNumber, 20);
+        Serial.println(senderNumber);
+        // Get remote number
+        // sms.remoteNumber(senderNumber, 20);
+        // oled.putString(senderNumber);
+
+        // An example of message disposal
+        // Any messages starting with # should be discarded
+        if (sms.peek() == '#')
+        {
+            // Serial.println("Discarded SMS");
+            sms.flush();
+        }
+
+        // Read message bytes and print them
+        {
+            oled.init();
+            oled.setTextXY(1, 0); // Set cursor position, start of line 1
+            char *msg;
+            while ((c = sms.read()) != -1)
+            {
+                char *temp = &c;
+                strcat(msg, temp);
+            }
+            Serial.println("message:");
+            Serial.println(msg);
+            oled.putString(msg);
+        }
+
+        // Serial.println("\nEND OF MESSAGE");
+
+        // Delete message from modem memory
+        sms.flush();
+        // Serial.println("MESSAGE DELETED");
+    }
+}
 
 void loop()
 {
     String s = Serial.readString();
-    if(s.length()) {
+    if (s.length())
+    {
         Serial.println(s.length());
     }
 
@@ -192,47 +238,9 @@ void loop()
     char c;
 
     // If there are any SMSs available()
-    if (sms.available())
-    {
-        Serial.println("Message received from:");
-        sms.remoteNumber(senderNumber, 20);
-        Serial.println(senderNumber);
-        // Get remote number
-        // sms.remoteNumber(senderNumber, 20);
-        // oled.putString(senderNumber);
-
-        // An example of message disposal
-        // Any messages starting with # should be discarded
-        if (sms.peek() == '#')
-        {
-            // Serial.println("Discarded SMS");
-            sms.flush();
-        }
-
-        // Read message bytes and print them
-        {
-            oled.init();
-            oled.setTextXY(1, 0); // Set cursor position, start of line 1
-            char* msg;
-            while ((c = sms.read()) != -1)
-            {
-                char* temp = &c;
-                strcat(msg, temp);
-            }
-            Serial.println("message:");
-            Serial.println(msg);
-            oled.putString(msg);
-        }
-
-        // Serial.println("\nEND OF MESSAGE");
-
-        // Delete message from modem memory
-        sms.flush();
-        // Serial.println("MESSAGE DELETED");
-    }
+    handleSMS();
 
     delay(1000);
-
 }
 
 const char *signTransaction(TX tx)
@@ -242,7 +250,7 @@ const char *signTransaction(TX tx)
 
     uint8_t *hashval = new uint8_t[HASH_LENGTH];
     keccak256((uint8_t *)(enc.c_str()), enc.size(), hashval);
-    Serial.println(byteArrayToCharArray(hashval, HASH_LENGTH));
+    // Serial.println(byteArrayToCharArray(hashval, HASH_LENGTH));
     // printf("Hash: %s\n\n", byteArrayToCharArray(hashval, HASH_LENGTH));
 
     uint8_t *sig = new uint8_t[SIGNATURE_LENGTH];
@@ -257,9 +265,9 @@ const char *signTransaction(TX tx)
     tx.r = string("0x") + byteArrayToCharArray(r, 32);
     tx.s = string("0x") + byteArrayToCharArray(s, 32);
     tx.v = "0x1c";
-    Serial.println("R signature u:");
+    // Serial.println("R signature u:");
     Serial.println(tx.r.c_str());
-    Serial.println("C signature u:");
+    // Serial.println("C signature u:");
     Serial.println(tx.s.c_str());
 
     string encoded = rlp.bytesToHex(rlp.encode(tx, false));
