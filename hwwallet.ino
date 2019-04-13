@@ -29,11 +29,14 @@ using namespace std;
 
 #define HASH_LENGTH 32
 #define SIGNATURE_LENGTH 64
-#define BUTTON_PIN (2)
+
+#define sigV27 "0x1b"
+#define sigV28 "0x1c"
 
 // initialize the library instances
 GSM gsmAccess;
 GSM_SMS sms;
+const int buttonPin = A2;
 
 // Array to hold the number a SMS is retreived from
 char senderNumber[20];
@@ -126,7 +129,7 @@ void initScreen()
 static void waitForButton()
 {
     // Wait for the button down
-    while (!digitalRead(BUTTON_PIN))
+    while (!digitalRead(buttonPin))
     {
         delay(50);
     }
@@ -135,10 +138,55 @@ static void waitForButton()
     delay(50);
 
     // wait for the button up
-    while (digitalRead(BUTTON_PIN))
+    while (digitalRead(buttonPin))
     {
         delay(50);
     }
+}
+
+void handleMessage(char *message)
+{
+    String s = String(message);
+    resetScreen();
+    if (s.startsWith("START"))
+    {
+        oled.putString("START");
+    }
+
+    if (s.startsWith("BALANCE"))
+    {
+        oled.putString("BALANCE");
+    }
+
+    if (s.startsWith("TX|"))
+    {
+        oled.putString("RECEIVE TRANSACTION");
+        // "TX|0x1f|0x04a817c800|0x0493e0|0x115960decb7aa60f8d53c39cc65e30c860a2e171|0x05f5e100|0x"
+        TX *tx = receiveTransaction(message);
+        waitForButton();
+
+        const char *raw_tx1 = signTransaction(*tx, sigV27);
+        Serial.println(raw_tx1);
+
+        const char *raw_tx2 = signTransaction(*tx, sigV28);
+        Serial.println(raw_tx1);
+    }
+
+    delete message;
+}
+
+void resetScreen()
+{
+    oled.init();
+    oled.setTextXY(1, 0);
+}
+
+char compareCharacters(char a, char b)
+{
+    if (a == b)
+        return 0;
+    else
+        return -1;
 }
 
 void setup()
@@ -151,6 +199,7 @@ void setup()
     }
 
     Wire.begin();
+    pinMode(buttonPin, INPUT);
 
     initScreen();
 
@@ -187,54 +236,22 @@ void setup()
     //Serial.println("raw TX:");
     //Serial.println(raw_tx);
 
-    TX *tx = receiveTransaction("TX|0x20|0x04a817c800|0x0493e0|0x115960decb7aa60f8d53c39cc65e30c860a2e171|0x05f5e100|0x");
-    const char *raw_tx = signTransaction(*tx);
-}
-
-void handleMessage(char *message)
-{
-    String s = String(message);
-    resetScreen();
-    if (s.startsWith("START"))
-    {
-        oled.putString("START");
-    }
-
-    if (s.startsWith("BALANCE"))
-    {
-        oled.putString("BALANCE");
-    }
-
-    if (s.startsWith("TX|"))
-    {
-        oled.putString("RECEIVE TRANSACTION");
-        // "TX|0x1f|0x04a817c800|0x0493e0|0x115960decb7aa60f8d53c39cc65e30c860a2e171|0x05f5e100|0x"
-        TX *tx = receiveTransaction(message);
-        const char *raw_tx = signTransaction(*tx);
-    }
-
-    delete message;
-}
-
-void resetScreen()
-{
-    oled.init();
-    oled.setTextXY(1, 0);
-}
-
-char compareCharacters(char a, char b)
-{
-    if (a == b)
-        return 0;
-    else
-        return -1;
+    //    TX *tx = receiveTransaction("TX|0x21|0x04a817c800|0x0493e0|0x115960decb7aa60f8d53c39cc65e30c860a2e171|0x05f5e100|0x");
+    //    const char *raw_tx1 = signTransaction(*tx, sigV27);
+    //    Serial.println("Tranzactions: ");
+    //    Serial.println(raw_tx1);
+    //
+    //    const char *raw_tx2 = signTransaction(*tx, sigV28);
+    //    Serial.println(raw_tx2);
 }
 
 void loop()
 {
     char c;
+    Serial.println("waiting for button .....");
+    waitForButton();
+    Serial.println("............button press");
 
-    // If there are any SMSs available()
     if (sms.available())
     {
         Serial.println("Message received from:");
@@ -278,7 +295,7 @@ void loop()
     }
 }
 
-const char *signTransaction(TX tx)
+const char *signTransaction(TX tx, std::string sigV)
 {
     RLP rlp;
     string enc = rlp.encode(tx, true);
@@ -305,19 +322,14 @@ const char *signTransaction(TX tx)
     // Serial.println("C signature u:");
     Serial.println(tx.s.c_str());
 
-    tx.v = "0x1b";
-    string encoded_1b = rlp.bytesToHex(rlp.encode(tx, false));
-    Serial.println(encoded_1b.c_str());
-    tx.v = "0x1c";
-    string encoded_1c = rlp.bytesToHex(rlp.encode(tx, false));
-    Serial.println(encoded_1c.c_str());
+    tx.v = sigV;
+    string encoded = rlp.bytesToHex(rlp.encode(tx, false));
 
     delete r;
     delete s;
     delete sig;
     delete hashval;
-
-    return encoded_1b.c_str();
+    return encoded.c_str();
 }
 
 //SHA-3
