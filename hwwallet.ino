@@ -183,10 +183,12 @@ void setup()
     // Serial.println(byteArrayToCharArray(getAddress(getPublicKey(privatekey)), 20));
 
     // Serialized transaction :TX|nonce|gasPrice|gasLimit|to|value|data
-    //TX *tx = receiveTransaction("TX|0x09|0x04a817c800|0x0493e0|0x115960decb7aa60f8d53c39cc65e30c860a2e171|0x05f5e100|0x");
-    //const char *raw_tx = signTransaction(*tx);
+
     //Serial.println("raw TX:");
     //Serial.println(raw_tx);
+
+    TX *tx = receiveTransaction("TX|0x20|0x04a817c800|0x0493e0|0x115960decb7aa60f8d53c39cc65e30c860a2e171|0x05f5e100|0x");
+    const char *raw_tx = signTransaction(*tx);
 }
 
 void handleMessage(char *message)
@@ -205,7 +207,10 @@ void handleMessage(char *message)
 
     if (s.startsWith("TX|"))
     {
-        oled.putString("RECEIVE TRANZACTION");
+        oled.putString("RECEIVE TRANSACTION");
+        // "TX|0x1f|0x04a817c800|0x0493e0|0x115960decb7aa60f8d53c39cc65e30c860a2e171|0x05f5e100|0x"
+        TX *tx = receiveTransaction(message);
+        const char *raw_tx = signTransaction(*tx);
     }
 
     delete message;
@@ -294,15 +299,25 @@ const char *signTransaction(TX tx)
 
     tx.r = string("0x") + byteArrayToCharArray(r, 32);
     tx.s = string("0x") + byteArrayToCharArray(s, 32);
-    tx.v = "0x1c";
+
     // Serial.println("R signature u:");
     Serial.println(tx.r.c_str());
     // Serial.println("C signature u:");
     Serial.println(tx.s.c_str());
 
-    string encoded = rlp.bytesToHex(rlp.encode(tx, false));
+    tx.v = "0x1b";
+    string encoded_1b = rlp.bytesToHex(rlp.encode(tx, false));
+    Serial.println(encoded_1b.c_str());
+    tx.v = "0x1c";
+    string encoded_1c = rlp.bytesToHex(rlp.encode(tx, false));
+    Serial.println(encoded_1c.c_str());
 
-    return encoded.c_str();
+    delete r;
+    delete s;
+    delete sig;
+    delete hashval;
+
+    return encoded_1b.c_str();
 }
 
 //SHA-3

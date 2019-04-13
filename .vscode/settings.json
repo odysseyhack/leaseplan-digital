@@ -34,6 +34,7 @@
         "limits": "cpp",
         "memory": "cpp",
         "ratio": "cpp",
-        "tuple": "cpp"
+        "tuple": "cpp",
+        "system_error": "cpp"
     }
 }
