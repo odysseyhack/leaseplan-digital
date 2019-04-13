@@ -1,5 +1,5 @@
 component_depth: 1
 languages:
-- cpp
+  - cpp
 exclude:
-- /libs/crypto/.*
+  - /libs/crypto/.*

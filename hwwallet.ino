@@ -29,6 +29,7 @@ using namespace std;
 
 #define HASH_LENGTH 32
 #define SIGNATURE_LENGTH 64
+#define BUTTON_PIN (2)
 
 // initialize the library instances
 GSM gsmAccess;
@@ -122,6 +123,24 @@ void initScreen()
     oled.putString("tel:+31622167828");
 }
 
+static void waitForButton()
+{
+    // Wait for the button down
+    while (!digitalRead(BUTTON_PIN))
+    {
+        delay(50);
+    }
+
+    // De-bounce
+    delay(50);
+
+    // wait for the button up
+    while (digitalRead(BUTTON_PIN))
+    {
+        delay(50);
+    }
+}
+
 void setup()
 {
 
@@ -169,9 +188,48 @@ void setup()
     //Serial.println("raw TX:");
     //Serial.println(raw_tx);
 }
-void handleSMS()
+
+void handleMessage(char *message)
+{
+    String s = String(message);
+    resetScreen();
+    if (s.startsWith("START"))
+    {
+        oled.putString("START");
+    }
+
+    if (s.startsWith("BALANCE"))
+    {
+        oled.putString("BALANCE");
+    }
+
+    if (s.startsWith("TX|"))
+    {
+        oled.putString("RECEIVE TRANZACTION");
+    }
+
+    delete message;
+}
+
+void resetScreen()
+{
+    oled.init();
+    oled.setTextXY(1, 0);
+}
+
+char compareCharacters(char a, char b)
+{
+    if (a == b)
+        return 0;
+    else
+        return -1;
+}
+
+void loop()
 {
     char c;
+
+    // If there are any SMSs available()
     if (sms.available())
     {
         Serial.println("Message received from:");
@@ -190,19 +248,22 @@ void handleSMS()
         }
 
         // Read message bytes and print them
+        oled.init();
+        oled.setTextXY(1, 0); // Set cursor position, start of line 1
+        char smsData[127];
+        byte smsIndex = 0;
+        while (c = sms.read())
         {
-            oled.init();
-            oled.setTextXY(1, 0); // Set cursor position, start of line 1
-            char *msg;
-            while ((c = sms.read()) != -1)
-            {
-                char *temp = &c;
-                strcat(msg, temp);
-            }
-            Serial.println("message:");
-            Serial.println(msg);
-            oled.putString(msg);
+            // message sanity check
+            if ((isalnum(c) == 0 && c != '|') || smsIndex > 127)
+                break;
+
+            smsData[smsIndex++] = c;
+            smsData[smsIndex] = '\0'; // Keep string NULL terminated
         }
+        Serial.println("message:");
+        Serial.println(smsData);
+        handleMessage(smsData);
 
         // Serial.println("\nEND OF MESSAGE");
 
@@ -210,36 +271,6 @@ void handleSMS()
         sms.flush();
         // Serial.println("MESSAGE DELETED");
     }
-}
-
-void loop()
-{
-    String s = Serial.readString();
-    if (s.length())
-    {
-        Serial.println(s.length());
-    }
-
-    //
-    if (s.startsWith("ping"))
-    {
-        // Serial.print("ping");
-    }
-
-    if (s.startsWith("TX|"))
-    {
-        //Serial.print(receiveTransaction(s));
-    }
-
-    if (s.startsWith("getAddress"))
-    {
-        //Serial.print(getAddress(getPublicKey(privatekey)));
-    }
-
-    // If there are any SMSs available()
-    handleSMS();
-
-    delay(1000);
 }
 
 const char *signTransaction(TX tx)
