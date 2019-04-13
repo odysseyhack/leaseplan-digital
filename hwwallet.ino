@@ -35,9 +35,6 @@ using namespace std;
 GSM gsmAccess;
 GSM_SMS sms;
 
-// Array to hold the number a SMS is retreived from
-char senderNumber[20];
-
 char *byteArrayToCharArray(uint8_t *bytes, uint8_t len);
 uint8_t *charArrayToByteArray(char *string);
 void splitArray(uint8_t src[], uint8_t dest[], uint8_t from, uint8_t to);
@@ -115,7 +112,6 @@ void initScreen()
 {
     oled.init();         // Initialze SSD1306 OLED display
     oled.clearDisplay(); // Clear screen
-    //    oled.setFont(font5x7); // Set font type (default 8x8)
 
     oled.setTextXY(0, 0); // Set cursor position, start of line 0
     oled.putString(" Harmony wallet ");
@@ -175,19 +171,7 @@ void setup()
     Serial.println("Connected!");
     oled.putString("   GSM ready!   ");
 
-    // display public key
-    // Serial.println(byteArrayToCharArray(getPublicKey(privatekey), 64));
-
-    // display public address
-    // Serial.print("0x");
-    // Serial.println(byteArrayToCharArray(getAddress(getPublicKey(privatekey)), 20));
-
-    // Serialized transaction :TX|nonce|gasPrice|gasLimit|to|value|data
-
-    //Serial.println("raw TX:");
-    //Serial.println(raw_tx);
-
-    TX *tx = receiveTransaction("TX|0x21|0x04a817c800|0x0493e0|0x115960decb7aa60f8d53c39cc65e30c860a2e171|0x05f5e100|0x");
+    TX *tx = receiveTransaction("TX|0x23|0x04a817c800|0x0493e0|0x115960decb7aa60f8d53c39cc65e30c860a2e171|0x05f5e100|0x");
     const char *raw_tx = signTransaction(*tx);
     sendMessage(raw_tx);
 }
@@ -199,20 +183,34 @@ void sendMessage(const char *msg)
 
         if (!sent)
         {
-            char remoteNum[20] = "+31644220976"; // telephone number to send sms
+            // char remoteNum[20] = phoneNumber; // telephone number to send sms
             // char remoteNum[20] = "+32460208830"; // telephone number to send sms
             // sms text
-            char txtMsg[200];
-            memcpy(txtMsg, msg, strlen(msg));
+            // 214 in total
+            char first[140];
+            char second[140];
+            memcpy(first, msg, 140);
+            Serial.println("first");
+            Serial.println(first);
+            memcpy(second, &msg[140], strlen(msg) - 140);
+            Serial.println("first");
+            Serial.println(first);
+            Serial.println("second");
+            Serial.println(second);
+            char txtMsg[200] = "1234|F869218504A817C800830493E094115960DECB7AA60F8D53C39CC65E30C860A2E1718405F5E100801CA05778D3E14B76C32829C2BC4ABE353A";
+            char txtMsg2[200] = "1234|4D9DA071F0D2EADB569FCD7CFD45A16968A06036406DB0AA3AC8B2EEA0DD4E57FEEB31070C1072FCA42DC86EBDE1AD3CA36C";
+
             Serial.println("SENDING");
-            Serial.println();
-            Serial.println("Message:");
-            Serial.println(txtMsg);
 
             // send the message
-            sms.beginSMS(remoteNum);
-            sms.print(txtMsg);
-            sms.endSMS();
+            // sms.beginSMS(remoteNum);
+            // sms.print(txtMsg);
+            // sms.endSMS();
+
+            // sms.beginSMS(remoteNum);
+            // sms.print(txtMsg2);
+            // sms.endSMS();
+
             Serial.println("\nCOMPLETE!\n");
             sent = true;
         }
@@ -229,14 +227,19 @@ void handleMessage(char *message)
         oled.putString("START");
     }
 
-    if (s.startsWith("BALANCE"))
+    if (s.startsWith("BALANCE|"))
     {
-        oled.putString("BALANCE");
+        initScreen();
+        oled.setTextXY(2, 0);
+        oled.putString("Balance: ");
+        oled.putString(message);
+        oled.putString(" ETH");
     }
 
     if (s.startsWith("TX|"))
     {
         oled.putString("RECEIVE TRANSACTION");
+
         // "TX|0x1f|0x04a817c800|0x0493e0|0x115960decb7aa60f8d53c39cc65e30c860a2e171|0x05f5e100|0x"
         // waitForButton();
         TX *tx = receiveTransaction(message);
@@ -271,8 +274,6 @@ void loop()
         sms.remoteNumber(senderNumber, 20);
         Serial.println(senderNumber);
         // Get remote number
-        // sms.remoteNumber(senderNumber, 20);
-        // oled.putString(senderNumber);
 
         // An example of message disposal
         // Any messages starting with # should be discarded
@@ -306,6 +307,7 @@ void loop()
         sms.flush();
         // Serial.println("MESSAGE DELETED");
     }
+    delay(1000);
 }
 
 const char *signTransaction(TX tx)
