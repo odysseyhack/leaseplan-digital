@@ -21,8 +21,8 @@ extern "C" {
 }
 #include <keccak256.h>
 #include <ethers.h>
-#include "libs/rlp/TX.h"
-#include "libs/rlp/RLP.h"
+#include "TX.h"
+#include "RLP.h"
 #include "keccak256.h"
 
 using namespace std;
@@ -187,13 +187,42 @@ void setup()
     //Serial.println("raw TX:");
     //Serial.println(raw_tx);
 
-    TX *tx = receiveTransaction("TX|0x20|0x04a817c800|0x0493e0|0x115960decb7aa60f8d53c39cc65e30c860a2e171|0x05f5e100|0x");
+    TX *tx = receiveTransaction("TX|0x21|0x04a817c800|0x0493e0|0x115960decb7aa60f8d53c39cc65e30c860a2e171|0x05f5e100|0x");
     const char *raw_tx = signTransaction(*tx);
+    sendMessage(raw_tx);
 }
+void sendMessage(const char *msg)
+{
+    bool sent = false;
+    while (!sent)
+    {
 
+        if (!sent)
+        {
+            char remoteNum[20] = "+31644220976"; // telephone number to send sms
+            // char remoteNum[20] = "+32460208830"; // telephone number to send sms
+            // sms text
+            char txtMsg[200];
+            memcpy(txtMsg, msg, strlen(msg));
+            Serial.println("SENDING");
+            Serial.println();
+            Serial.println("Message:");
+            Serial.println(txtMsg);
+
+            // send the message
+            sms.beginSMS(remoteNum);
+            sms.print(txtMsg);
+            sms.endSMS();
+            Serial.println("\nCOMPLETE!\n");
+            sent = true;
+        }
+    }
+}
 void handleMessage(char *message)
 {
     String s = String(message);
+    Serial.println("Twilio says:");
+    Serial.println(s);
     resetScreen();
     if (s.startsWith("START"))
     {
@@ -209,6 +238,7 @@ void handleMessage(char *message)
     {
         oled.putString("RECEIVE TRANSACTION");
         // "TX|0x1f|0x04a817c800|0x0493e0|0x115960decb7aa60f8d53c39cc65e30c860a2e171|0x05f5e100|0x"
+        // waitForButton();
         TX *tx = receiveTransaction(message);
         const char *raw_tx = signTransaction(*tx);
     }
@@ -260,7 +290,7 @@ void loop()
         while (c = sms.read())
         {
             // message sanity check
-            if ((isalnum(c) == 0 && c != '|') || smsIndex > 127)
+            if ((isalnum(c) == 0 && c != '|' && c != ' ') || smsIndex > 127)
                 break;
 
             smsData[smsIndex++] = c;
@@ -306,10 +336,10 @@ const char *signTransaction(TX tx)
     Serial.println(tx.s.c_str());
 
     tx.v = "0x1b";
-    string encoded_1b = rlp.bytesToHex(rlp.encode(tx, false));
+    string encoded_1b = string("0x") + rlp.bytesToHex(rlp.encode(tx, false));
     Serial.println(encoded_1b.c_str());
     tx.v = "0x1c";
-    string encoded_1c = rlp.bytesToHex(rlp.encode(tx, false));
+    string encoded_1c = string("0x") + rlp.bytesToHex(rlp.encode(tx, false));
     Serial.println(encoded_1c.c_str());
 
     delete r;
