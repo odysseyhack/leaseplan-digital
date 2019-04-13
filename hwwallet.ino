@@ -29,6 +29,7 @@ using namespace std;
 
 #define HASH_LENGTH 32
 #define SIGNATURE_LENGTH 64
+#define BUTTON_PIN (2)
 
 // initialize the library instances
 GSM gsmAccess;
@@ -109,6 +110,17 @@ void splitArray(uint8_t src[], uint8_t dest[], uint8_t from, uint8_t to)
         dest[i] = src[ctr];
         i++;
     }
+}
+
+static void waitForButton() {
+    // Wait for the button down
+    while (!digitalRead(BUTTON_PIN)) { delay(50); }
+
+    // De-bounce
+    delay(50);
+
+    // wait for the button up
+    while (digitalRead(BUTTON_PIN)) { delay(50); }
 }
 
 void setup()
