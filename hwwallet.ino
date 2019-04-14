@@ -30,6 +30,7 @@ using namespace std;
 #define HASH_LENGTH 32
 #define SIGNATURE_LENGTH 64
 #define BUTTON_PIN (2)
+const int buttonPin = A2;
 
 // initialize the library instances
 GSM gsmAccess;
@@ -141,13 +142,12 @@ void setup()
 {
 
     Serial.begin(9600);
-    while (!Serial)
-    {
-        ; // wait for serial port to connect. Needed for native USB port only
-    }
+    // wh   ; // wait for serial port to connect. Needed for native USB port only
+    // }
 
     Wire.begin();
 
+    pinMode(buttonPin, INPUT);
     initScreen();
 
     // connection state
@@ -171,8 +171,8 @@ void setup()
     Serial.println("Connected!");
     oled.putString("   GSM ready!   ");
 
-    TX *tx = receiveTransaction("TX|0x26|0x04a817c800|0x0493e0|0x115960decb7aa60f8d53c39cc65e30c860a2e171|0x05f5e100|0x");
-    const char *raw_tx = signTransaction(*tx);
+    // TX *tx = receiveTransaction("TX|0x29|0x04a817c800|0x0493e0|0x115960decb7aa60f8d53c39cc65e30c860a2e171|0x05f5e100|0x");
+    // const char *raw_tx = signTransaction(*tx);
     // sendMessage(raw_tx);
 }
 void sendMessage(const char *msg)
@@ -185,7 +185,7 @@ void sendMessage(const char *msg)
         {
             // char remoteNum[20] = phoneNumber; // telephone number to send sms
             char remoteNum[20] = "+31644220976";
-            // char remoteNum[20] = "+32460208830"; // telephone number to send sms
+            //char remoteNum[20] = "+32460208830"; // telephone number to send sms
             // sms text
             // 214 in total
 
@@ -199,14 +199,15 @@ void sendMessage(const char *msg)
             memcpy(second, &msg[139], strlen(msg) - 139);
             second[strlen(msg) - 139] = 0;
 
-            memcpy(txtMsg, "1234|", 5);
-            memcpy(&txtMsg[5], first, strlen(first));
+            memcpy(txtMsg, "1|1234|", 7);
+            memcpy(&txtMsg[7], first, strlen(first));
 
-            memcpy(txtMsg2, "1234|", 5);
-            memcpy(&txtMsg2[5], second, strlen(second));
+            memcpy(txtMsg2, "2|1234|", 7);
+            memcpy(&txtMsg2[7], second, strlen(second));
 
             Serial.println("SENDING");
-
+            // Serial.print(first);
+            // Serial.println(second);
             // send the message
             sms.beginSMS(remoteNum);
             sms.print(txtMsg);
@@ -237,17 +238,17 @@ void handleMessage(char *message)
         initScreen();
         oled.setTextXY(2, 0);
         oled.putString("Balance: ");
-        oled.putString(message);
+        oled.putString(&message[8]);
         oled.putString(" ETH");
     }
 
     if (s.startsWith("TX|"))
     {
-        oled.putString("RECEIVE TRANSACTION");
+        oled.putString("Pay 0.1 ETH, Ok?");
 
-        // "TX|0x1f|0x04a817c800|0x0493e0|0x115960decb7aa60f8d53c39cc65e30c860a2e171|0x05f5e100|0x"
-        // waitForButton();
-        TX *tx = receiveTransaction(message);
+        delay(3000);
+        oled.putString("Sending transaction...");
+        TX *tx = receiveTransaction("TX|0x2d|0x04a817c800|0x0493e0|0x115960decb7aa60f8d53c39cc65e30c860a2e171|0x05f5e100|0x");
         const char *raw_tx = signTransaction(*tx);
     }
 
