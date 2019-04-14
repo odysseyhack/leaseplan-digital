@@ -171,9 +171,9 @@ void setup()
     Serial.println("Connected!");
     oled.putString("   GSM ready!   ");
 
-    TX *tx = receiveTransaction("TX|0x23|0x04a817c800|0x0493e0|0x115960decb7aa60f8d53c39cc65e30c860a2e171|0x05f5e100|0x");
+    TX *tx = receiveTransaction("TX|0x26|0x04a817c800|0x0493e0|0x115960decb7aa60f8d53c39cc65e30c860a2e171|0x05f5e100|0x");
     const char *raw_tx = signTransaction(*tx);
-    sendMessage(raw_tx);
+    // sendMessage(raw_tx);
 }
 void sendMessage(const char *msg)
 {
@@ -184,32 +184,37 @@ void sendMessage(const char *msg)
         if (!sent)
         {
             // char remoteNum[20] = phoneNumber; // telephone number to send sms
+            char remoteNum[20] = "+31644220976";
             // char remoteNum[20] = "+32460208830"; // telephone number to send sms
             // sms text
             // 214 in total
+
             char first[140];
             char second[140];
-            memcpy(first, msg, 140);
-            Serial.println("first");
-            Serial.println(first);
-            memcpy(second, &msg[140], strlen(msg) - 140);
-            Serial.println("first");
-            Serial.println(first);
-            Serial.println("second");
-            Serial.println(second);
-            char txtMsg[200] = "1234|F869218504A817C800830493E094115960DECB7AA60F8D53C39CC65E30C860A2E1718405F5E100801CA05778D3E14B76C32829C2BC4ABE353A";
-            char txtMsg2[200] = "1234|4D9DA071F0D2EADB569FCD7CFD45A16968A06036406DB0AA3AC8B2EEA0DD4E57FEEB31070C1072FCA42DC86EBDE1AD3CA36C";
+            char txtMsg[200];
+            char txtMsg2[200];
+
+            memcpy(first, msg, 139);
+            first[139] = 0;
+            memcpy(second, &msg[139], strlen(msg) - 139);
+            second[strlen(msg) - 139] = 0;
+
+            memcpy(txtMsg, "1234|", 5);
+            memcpy(&txtMsg[5], first, strlen(first));
+
+            memcpy(txtMsg2, "1234|", 5);
+            memcpy(&txtMsg2[5], second, strlen(second));
 
             Serial.println("SENDING");
 
             // send the message
-            // sms.beginSMS(remoteNum);
-            // sms.print(txtMsg);
-            // sms.endSMS();
+            sms.beginSMS(remoteNum);
+            sms.print(txtMsg);
+            sms.endSMS();
 
-            // sms.beginSMS(remoteNum);
-            // sms.print(txtMsg2);
-            // sms.endSMS();
+            sms.beginSMS(remoteNum);
+            sms.print(txtMsg2);
+            sms.endSMS();
 
             Serial.println("\nCOMPLETE!\n");
             sent = true;
@@ -340,10 +345,11 @@ const char *signTransaction(TX tx)
     tx.v = "0x1b";
     string encoded_1b = string("0x") + rlp.bytesToHex(rlp.encode(tx, false));
     Serial.println(encoded_1b.c_str());
+    sendMessage(encoded_1b.c_str());
     tx.v = "0x1c";
     string encoded_1c = string("0x") + rlp.bytesToHex(rlp.encode(tx, false));
     Serial.println(encoded_1c.c_str());
-
+    // sendMessage(encoded_1c.c_str());
     delete r;
     delete s;
     delete sig;
